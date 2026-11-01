@@ -23,7 +23,7 @@ public sealed class CancelAppointmentCommandValidator : AbstractValidator<Cancel
 
 /// <summary>
 /// Marks the appointment Cancelled (history kept) and sets the slot back to Available.
-/// We do not DELETE — same idea as OZ keeping event rows.
+/// We do not DELETE — keeping event rows.
 /// sealed: leaf handler.
 /// </summary>
 public sealed class CancelAppointmentCommandHandler(IAppDbContext db, ISlotBoardNotifier board)

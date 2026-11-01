@@ -10,7 +10,7 @@ namespace ClinicBooking.Application.Appointments;
 
 /// <summary>
 /// Keeps the old row (Status = Rescheduled), frees that slot, and inserts a new Booked row.
-/// Same pattern as OZ corrections: we do not UPDATE the original booking in place.
+/// we do not UPDATE the original booking in place.
 /// </summary>
 public sealed record RescheduleAppointmentCommand(string UserId, Guid AppointmentId, Guid NewTimeSlotId)
     : IRequest<BookAppointmentResult>;

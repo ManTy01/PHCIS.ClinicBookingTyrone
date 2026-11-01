@@ -9,7 +9,7 @@ using ClinicBooking.Blazor.Models;
 namespace ClinicBooking.Blazor.Api;
 
 /// <summary>
-/// PDF HttpClient: WASM talks to the API only — same rule as OZ Blazor. All booking rules stay on the server.
+/// PDF HttpClient: WASM talks to the API only. All booking rules stay on the server.
 /// ApplyAuth copies the JWT onto the request (belt-and-braces with BearerHandler).
 /// sealed: one client type.
 /// </summary>
