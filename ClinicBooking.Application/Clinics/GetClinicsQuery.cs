@@ -9,7 +9,7 @@ namespace ClinicBooking.Application.Clinics;
 /// <summary>Public clinic card — enough to pick Soweto or Sandton.</summary>
 public sealed record ClinicDto(Guid Id, string Name, string Address, string? Phone);
 
-/// <summary>No parameters — both seeded clinics. sealed: MediatR exact type.</summary>
+/// <summary>No parameters — seeded clinics plus any admin-added rows. sealed: MediatR exact type.</summary>
 public sealed record GetClinicsQuery : IRequest<IReadOnlyList<ClinicDto>>;
 
 /// <summary>PDF AutoMapper ProjectTo so we do not hand-map columns. sealed: leaf handler.</summary>

@@ -178,7 +178,7 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
 
         await LoginAsPatientAsync();
         var asPatient = await _client.GetAsync($"/api/staff/clinics/{clinicId}/diary?from={date:yyyy-MM-dd}&to={date:yyyy-MM-dd}");
-        Assert.Equal(HttpStatusCode.Forbidden, asPatient.StatusCode);
+        await AssertNotAuthorisedAsync(asPatient);
 
         var cancel = await _client.PostAsJsonAsync($"/api/appointments/{created.AppointmentId}/cancel", new { reason = "diary cleanup" });
         Assert.Equal(HttpStatusCode.NoContent, cancel.StatusCode);
@@ -299,9 +299,122 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         Assert.Contains("ClinicStaff", profile.Roles);
     }
 
+    /// <summary>Admin JWT. Creates a clinic and weekday hour slots so GET /slots is not empty.</summary>
+    [Fact]
+    public async Task CreateClinic_AsAdmin_AppearsInListWithHourSlots()
+    {
+        await LoginAsAdminAsync();
+        var name = $"Alexandra Clinic {Guid.NewGuid():N}";
+        var created = await _client.PostAsJsonAsync("/api/clinics", new
+        {
+            name,
+            address = "1 8th Avenue, Alexandra",
+            phone = "011 000 1003"
+        });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var clinic = await created.Content.ReadFromJsonAsync<ClinicDto>(Json);
+        Assert.NotNull(clinic);
+        Assert.Equal(name, clinic.Name);
+
+        _client.DefaultRequestHeaders.Authorization = null;
+        var clinics = await _client.GetFromJsonAsync<List<ClinicDto>>("/api/clinics", Json);
+        Assert.Contains(clinics!, c => c.Id == clinic.Id && c.Phone == "011 000 1003");
+
+        var slot = await FirstAvailableSlotAsync(clinic.Id);
+        Assert.NotNull(slot);
+        Assert.Equal(TimeSpan.FromHours(1), slot!.EndUtc - slot.StartUtc);
+    }
+
+    /// <summary>Admin JWT. Name/address/phone change; slots stay as they were.</summary>
+    [Fact]
+    public async Task UpdateClinic_AsAdmin_ChangesCard()
+    {
+        await LoginAsAdminAsync();
+        var name = $"Tembisa Clinic {Guid.NewGuid():N}";
+        var created = await _client.PostAsJsonAsync("/api/clinics", new
+        {
+            name,
+            address = "Tembisa Civic Centre",
+            phone = "011 000 1004"
+        });
+        var clinic = await created.Content.ReadFromJsonAsync<ClinicDto>(Json);
+        Assert.NotNull(clinic);
+
+        var updatedName = $"{name} West";
+        var updated = await _client.PutAsJsonAsync($"/api/clinics/{clinic.Id}", new
+        {
+            name = updatedName,
+            address = "Tembisa Hospital Road",
+            phone = "011 000 1999"
+        });
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+
+        var clinics = await _client.GetFromJsonAsync<List<ClinicDto>>("/api/clinics", Json);
+        var row = Assert.Single(clinics!, c => c.Id == clinic.Id);
+        Assert.Equal(updatedName, row.Name);
+        Assert.Equal("Tembisa Hospital Road", row.Address);
+        Assert.Equal("011 000 1999", row.Phone);
+    }
+
+    /// <summary>Staff JWT is authenticated but not Admin — 403 with "Not authorised".</summary>
+    [Fact]
+    public async Task CreateClinic_AsStaff_IsNotAuthorised()
+    {
+        await LoginAsStaffAsync();
+        var response = await _client.PostAsJsonAsync("/api/clinics", new
+        {
+            name = "Should Fail Clinic",
+            address = "Nowhere",
+            phone = (string?)null
+        });
+        await AssertNotAuthorisedAsync(response);
+    }
+
+    /// <summary>Patient JWT cannot edit clinics either.</summary>
+    [Fact]
+    public async Task UpdateClinic_AsPatient_IsNotAuthorised()
+    {
+        var clinics = await _client.GetFromJsonAsync<List<ClinicDto>>("/api/clinics", Json);
+        Assert.NotNull(clinics);
+        var clinicId = clinics[0].Id;
+
+        await LoginAsPatientAsync();
+        var response = await _client.PutAsJsonAsync($"/api/clinics/{clinicId}", new
+        {
+            name = "Hacked name",
+            address = "Hacked",
+            phone = (string?)null
+        });
+        await AssertNotAuthorisedAsync(response);
+    }
+
+    /// <summary>No JWT on POST /api/clinics is 401 (not signed in), not 403.</summary>
+    [Fact]
+    public async Task CreateClinic_WithoutJwt_IsUnauthorized()
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
+        var response = await _client.PostAsJsonAsync("/api/clinics", new
+        {
+            name = "Anonymous Clinic",
+            address = "Nowhere",
+            phone = (string?)null
+        });
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     private Task LoginAsPatientAsync() => LoginAsync("patient@phcis.local");
 
     private Task LoginAsStaffAsync() => LoginAsync("staff@phcis.local");
+
+    private Task LoginAsAdminAsync() => LoginAsync("admin@phcis.local");
+
+    /// <summary>Wrong role on [Authorize] now returns ProblemDetails Detail = Not authorised.</summary>
+    private static async Task AssertNotAuthorisedAsync(HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        var json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Not authorised", json, StringComparison.OrdinalIgnoreCase);
+    }
 
     /// <summary>POST /api/auth/login then put the JWT on DefaultRequestHeaders.Authorization.</summary>
     private async Task LoginAsync(string email)

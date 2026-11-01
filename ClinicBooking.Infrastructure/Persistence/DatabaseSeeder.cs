@@ -1,6 +1,6 @@
+using ClinicBooking.Application.Clinics;
 using ClinicBooking.Domain;
 using ClinicBooking.Domain.Entities;
-using ClinicBooking.Domain.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -86,54 +86,9 @@ public static class DatabaseSeeder
         var clinics = await db.Clinics.ToListAsync(cancellationToken);
         foreach (var clinic in clinics)
         {
-            db.TimeSlots.AddRange(BuildWeekdaySlots(clinic));
+            db.TimeSlots.AddRange(ClinicHourSlots.BuildWeekdayHours(clinic.Id, clinic.TimeZoneId));
         }
 
         await db.SaveChangesAsync(cancellationToken);
-    }
-
-    /// <summary>Next 10 weekdays, 8 hour cells each, stored as UTC with SAST local start.</summary>
-    private static IEnumerable<TimeSlot> BuildWeekdaySlots(Clinic clinic)
-    {
-        var tz = ResolveTimeZone(clinic.TimeZoneId);
-        var localToday = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz).Date;
-        var added = 0;
-        for (var day = 0; added < 10 && day < 21; day++)
-        {
-            var date = localToday.AddDays(day);
-            if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            {
-                continue;
-            }
-
-            added++;
-            for (var hour = 8; hour < 16; hour++)
-            {
-                var localStart = new DateTime(date.Year, date.Month, date.Day, hour, 0, 0, DateTimeKind.Unspecified);
-                var startUtc = TimeZoneInfo.ConvertTimeToUtc(localStart, tz);
-                yield return new TimeSlot
-                {
-                    Id = Guid.NewGuid(),
-                    ClinicId = clinic.Id,
-                    StartUtc = new DateTimeOffset(startUtc, TimeSpan.Zero),
-                    EndUtc = new DateTimeOffset(startUtc.AddHours(1), TimeSpan.Zero),
-                    Status = TimeSlotStatus.Available,
-                    Capacity = 1
-                };
-            }
-        }
-    }
-
-    /// <summary>Windows TZ on LocalDB; Africa/Johannesburg if the API is in Linux Docker.</summary>
-    private static TimeZoneInfo ResolveTimeZone(string timeZoneId)
-    {
-        try
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
-        }
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("Africa/Johannesburg");
-        }
     }
 }

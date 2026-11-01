@@ -1,5 +1,5 @@
 @page "/"
-@* Home: public clinic picker. No JWT required. Staff also get a diary button via AuthorizeView. *@
+@* Home: public clinic picker. No JWT required. Admin add/edit opens a Fluent UI dialog. *@
 @inject ClinicApiClient Api
 @inject NavigationManager Navigation
 
@@ -15,11 +15,46 @@
 {
     <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
 }
-else if (_clinics is null)
+@if (!string.IsNullOrEmpty(_message))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Success">@_message</FluentMessageBar>
+}
+
+<AuthorizeView Roles="Admin">
+    <Authorized>
+        <div class="clinic-actions" style="margin-bottom: 1rem;">
+            <FluentButton Appearance="ButtonAppearance.Primary" OnClick="StartCreateAsync">Add clinic</FluentButton>
+        </div>
+    </Authorized>
+</AuthorizeView>
+
+@* Always in the tree so @ref is set; ShowAsync / HideAsync toggle the overlay. *@
+<FluentDialog @ref="_clinicDialog" Modal="true" OnStateChange="OnClinicDialogStateChange">
+    <FluentDialogBody>
+        <TitleTemplate>@(_editId is null ? "Add clinic" : "Edit clinic")</TitleTemplate>
+        <ChildContent>
+            @if (!string.IsNullOrEmpty(_formError))
+            {
+                <FluentMessageBar Intent="MessageBarIntent.Error">@_formError</FluentMessageBar>
+            }
+            <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+                <FluentTextInput Label="Name" @bind-Value="_formName" />
+                <FluentTextInput Label="Address" @bind-Value="_formAddress" />
+                <FluentTextInput Label="Phone" @bind-Value="_formPhone" />
+            </FluentStack>
+        </ChildContent>
+        <ActionTemplate>
+            <FluentButton Appearance="ButtonAppearance.Primary" Disabled="_busy" OnClick="SaveAsync">Save</FluentButton>
+            <FluentButton Appearance="ButtonAppearance.Outline" Disabled="_busy" OnClick="CancelFormAsync">Cancel</FluentButton>
+        </ActionTemplate>
+    </FluentDialogBody>
+</FluentDialog>
+
+@if (_clinics is null && string.IsNullOrEmpty(_error))
 {
     <p>Loading clinics…</p>
 }
-else
+else if (_clinics is not null)
 {
     <FluentGrid Spacing="3">
         @foreach (var clinic in _clinics)
@@ -40,6 +75,13 @@ else
                                 </FluentButton>
                             </Authorized>
                         </AuthorizeView>
+                        <AuthorizeView Roles="Admin">
+                            <Authorized>
+                                <FluentButton Appearance="ButtonAppearance.Outline" OnClick="() => StartEditAsync(clinic)">
+                                    Edit
+                                </FluentButton>
+                            </Authorized>
+                        </AuthorizeView>
                     </div>
                 </FluentCard>
             </FluentGridItem>
@@ -48,11 +90,109 @@ else
 }
 
 @code {
+    private FluentDialog? _clinicDialog;
     private List<ClinicDto>? _clinics;
     private string? _error;
+    private string? _message;
+    private string? _formError;
+    private bool _busy;
+    private Guid? _editId;
+    private string _formName = string.Empty;
+    private string _formAddress = string.Empty;
+    private string _formPhone = string.Empty;
 
     /// <summary>GET /api/clinics — anonymous.</summary>
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadClinicsAsync();
+
+    /// <summary>Admin-only create. Opens the Fluent dialog on this page (no extra route).</summary>
+    private async Task StartCreateAsync()
+    {
+        _error = null;
+        _message = null;
+        _formError = null;
+        _editId = null;
+        _formName = string.Empty;
+        _formAddress = string.Empty;
+        _formPhone = string.Empty;
+        await ShowClinicDialogAsync();
+    }
+
+    /// <summary>Admin-only edit. Prefills the same dialog used for add.</summary>
+    private async Task StartEditAsync(ClinicDto clinic)
+    {
+        _error = null;
+        _message = null;
+        _formError = null;
+        _editId = clinic.Id;
+        _formName = clinic.Name;
+        _formAddress = clinic.Address;
+        _formPhone = clinic.Phone ?? string.Empty;
+        await ShowClinicDialogAsync();
+    }
+
+    /// <summary>Escape / overlay close also hides the dialog — clear the edit id so the next open is a create.</summary>
+    private void OnClinicDialogStateChange(DialogEventArgs args)
+    {
+        if (args.State is DialogState.Closed or DialogState.Closing)
+        {
+            _editId = null;
+        }
+    }
+
+    private async Task CancelFormAsync()
+    {
+        if (_clinicDialog is not null)
+        {
+            await _clinicDialog.HideAsync();
+        }
+    }
+
+    /// <summary>POST /api/clinics or PUT /api/clinics/{id}. API returns 403 Not authorised for non-admin JWTs.</summary>
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _formError = null;
+        _message = null;
+        try
+        {
+            if (_editId is Guid id)
+            {
+                await Api.UpdateClinicAsync(id, _formName, _formAddress, _formPhone);
+                _message = "Clinic updated.";
+            }
+            else
+            {
+                await Api.CreateClinicAsync(_formName, _formAddress, _formPhone);
+                _message = "Clinic added.";
+            }
+
+            if (_clinicDialog is not null)
+            {
+                await _clinicDialog.HideAsync();
+            }
+
+            _editId = null;
+            await LoadClinicsAsync();
+        }
+        catch (Exception ex)
+        {
+            _formError = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ShowClinicDialogAsync()
+    {
+        if (_clinicDialog is not null)
+        {
+            await _clinicDialog.ShowAsync();
+        }
+    }
+
+    private async Task LoadClinicsAsync()
     {
         try
         {

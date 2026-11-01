@@ -19,6 +19,7 @@ using ClinicBooking.Api.Hubs;
 using ClinicBooking.Api.Middleware;
 using ClinicBooking.Api.Realtime;
 using ClinicBooking.Api.Swagger;
+using Microsoft.AspNetCore.Authorization;
 using ClinicBooking.Application;
 using ClinicBooking.Application.Abstractions;
 using ClinicBooking.Application.Auth;
@@ -82,7 +83,8 @@ builder.Services.AddSwaggerGen(options =>
             "1. POST /api/auth/login with { \"email\": \"patient@phcis.local\", \"password\": \"Password123!\" }\n" +
             "2. Copy the token string only (not the word Bearer).\n" +
             "3. Click Authorize, paste the token, then call /api/appointments.\n" +
-            "Staff diary needs staff@phcis.local instead."
+            "Staff diary needs staff@phcis.local. Admin POST/PUT /api/clinics needs admin@phcis.local.\n" +
+            "Wrong role on a protected call returns 403 Not authorised."
     });
 
     // PDF: JWT Tokens. Swagger "Authorize" lock sends Authorization: Bearer <token>.
@@ -107,6 +109,9 @@ builder.Services.AddSwaggerGen(options =>
 // We validate issuer, audience, lifetime, and HMAC signature against Jwt:Key.
 var jwt = builder.Configuration.GetSection("Jwt");
 var jwtKey = jwt["Key"] ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+
+// Wrong role (patient hitting Admin POST /api/clinics, staff hitting Patient book, …) → 403 JSON "Not authorised".
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ForbiddenAuthorizationResultHandler>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

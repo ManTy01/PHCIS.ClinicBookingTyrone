@@ -25,6 +25,14 @@ public sealed class ClinicApiClient(HttpClient http, AuthSession session)
     public Task<List<ClinicDto>> GetClinicsAsync() =>
         GetRequiredAsync<List<ClinicDto>>("api/clinics");
 
+    /// <summary>Admin JWT. 201 Created. 403 Not authorised for staff/patient.</summary>
+    public Task<ClinicDto> CreateClinicAsync(string name, string address, string? phone) =>
+        PostAsync<ClinicDto>("api/clinics", new { name, address, phone }, HttpStatusCode.Created);
+
+    /// <summary>Admin JWT. 200. 403 Not authorised for staff/patient.</summary>
+    public Task<ClinicDto> UpdateClinicAsync(Guid clinicId, string name, string address, string? phone) =>
+        PutAsync<ClinicDto>($"api/clinics/{clinicId}", new { name, address, phone });
+
     /// <summary>Public one-day schedule.</summary>
     public Task<List<TimeSlotDto>> GetSlotsAsync(Guid clinicId, DateOnly date) =>
         GetRequiredAsync<List<TimeSlotDto>>($"api/clinics/{clinicId}/slots?date={date:yyyy-MM-dd}");
@@ -152,7 +160,12 @@ public sealed class ClinicApiClient(HttpClient http, AuthSession session)
         }
         catch (JsonException)
         {
-            // 401/403 often have an empty body.
+            // 401 often has an empty body. 403 now sends ProblemDetails "Not authorised".
+        }
+
+        if (response.StatusCode == HttpStatusCode.Forbidden)
+        {
+            throw new HttpRequestException(message ?? "Not authorised", null, response.StatusCode);
         }
 
         throw new HttpRequestException(
