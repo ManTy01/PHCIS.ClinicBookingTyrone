@@ -1,7 +1,7 @@
 # PHCIS Clinic Booking
 
 Blazor WASM + ASP.NET Core API for the PHCIS senior practical assessment.
-Same layered shape as OZ.TradingServiceTyrone: Domain has no EF, no HTTP, no UI.
+Domain has no EF, no HTTP, no UI.
 
 Written tasks (stakeholders, requirements, ERD, sequences): **[SOLUTION.md](SOLUTION.md)**.
 
