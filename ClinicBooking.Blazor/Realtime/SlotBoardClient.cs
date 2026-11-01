@@ -26,7 +26,7 @@ public sealed class SlotBoardClient(IConfiguration config) : IAsyncDisposable
 
     /// <summary>
     /// Pages call this in OnParametersSetAsync. Reuses the same socket if already started.
-    /// Switching Soweto → Sandton leaves the old group first.
+    /// Switching clinics leaves the old group first.
     /// </summary>
     public async Task WatchClinicAsync(Guid clinicId, Func<SlotBoardChange, Task> onChanged)
     {

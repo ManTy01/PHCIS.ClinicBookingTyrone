@@ -86,21 +86,13 @@ public sealed class ClinicApiClient(HttpClient http, AuthSession session)
     public Task<BookAppointmentResult> RescheduleAsync(Guid appointmentId, Guid newTimeSlotId) =>
         PostAsync<BookAppointmentResult>($"api/appointments/{appointmentId}/reschedule", new { newTimeSlotId });
 
-    /// <summary>Staff JWT. 204.</summary>
-    public async Task BlockSlotAsync(Guid slotId)
-    {
-        ApplyAuth();
-        var response = await http.PostAsync($"api/staff/slots/{slotId}/block", null);
-        await EnsureSuccess(response);
-    }
+    /// <summary>Staff JWT. 200 + message (that hour is now blocked).</summary>
+    public Task<SlotActionResult> BlockSlotAsync(Guid slotId) =>
+        PostAsync<SlotActionResult>($"api/staff/slots/{slotId}/block", new { });
 
-    /// <summary>Staff JWT. 204.</summary>
-    public async Task UnblockSlotAsync(Guid slotId)
-    {
-        ApplyAuth();
-        var response = await http.PostAsync($"api/staff/slots/{slotId}/unblock", null);
-        await EnsureSuccess(response);
-    }
+    /// <summary>Staff JWT. 200 + message (that hour is available again).</summary>
+    public Task<SlotActionResult> UnblockSlotAsync(Guid slotId) =>
+        PostAsync<SlotActionResult>($"api/staff/slots/{slotId}/unblock", new { });
 
     /// <summary>PDF JWT: set or clear the Bearer header from AuthSession before each call.</summary>
     private void ApplyAuth()

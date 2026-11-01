@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ClinicBooking.Application.Clinics;
 
-/// <summary>Public clinic card — enough to pick Soweto or Sandton.</summary>
+/// <summary>Public clinic card — enough to pick Jhb or Cpt.</summary>
 public sealed record ClinicDto(Guid Id, string Name, string Address, string? Phone);
 
 /// <summary>No parameters — seeded clinics plus any admin-added rows. sealed: MediatR exact type.</summary>

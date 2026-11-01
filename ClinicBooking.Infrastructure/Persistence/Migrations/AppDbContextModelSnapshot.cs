@@ -110,16 +110,16 @@ namespace ClinicBooking.Infrastructure.Persistence.Migrations
                         new
                         {
                             Id = new Guid("8f1e3c2a-7b64-4d91-9c0e-1a2b3c4d5e6f"),
-                            Address = "Diepkloof, Soweto",
-                            Name = "Soweto Community Clinic",
+                            Address = "Jhb, Jhb",
+                            Name = "Jhb Community Clinic",
                             Phone = "011 000 1001",
                             TimeZoneId = "South Africa Standard Time"
                         },
                         new
                         {
                             Id = new Guid("a4c8d912-3e70-4b55-8f21-9d6e5c4b3a20"),
-                            Address = "Rivonia Road, Sandton",
-                            Name = "Sandton Primary Care",
+                            Address = "Cpt Road, Cpt",
+                            Name = "Cpt Primary Care",
                             Phone = "011 000 1002",
                             TimeZoneId = "South Africa Standard Time"
                         });

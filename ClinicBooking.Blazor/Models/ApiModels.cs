@@ -43,6 +43,9 @@ public sealed record ProfileDto(
 /// <summary>PDF confirmation message fields.</summary>
 public sealed record BookAppointmentResult(Guid AppointmentId, string ConfirmationCode, DateTimeOffset StartUtc);
 
+/// <summary>Staff block/unblock 200 body. Mirrors API SlotActionResult.</summary>
+public sealed record SlotActionResult(string Message);
+
 /// <summary>ASP.NET ProblemDetails subset for error text on the UI.</summary>
 public sealed record ProblemDetailsDto(string? Title, string? Detail, int? Status);
 

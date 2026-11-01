@@ -17,8 +17,8 @@ public class UpdateMyProfileHandlerTests
         {
             Id = Guid.NewGuid(),
             UserId = "user-1",
-            FirstName = "Sipho",
-            LastName = "Dlamini",
+            FirstName = "John",
+            LastName = "Doe",
             Email = "patient@phcis.local"
         };
 
@@ -41,15 +41,15 @@ public class UpdateMyProfileHandlerTests
             new UpdateMyProfileCommand(
                 "user-1",
                 "patient@phcis.local",
-                "Thandi",
-                "Ndlovu",
+                "Jane",
+                "Doe",
                 "0820000000",
                 new DateOnly(1991, 3, 12)),
             CancellationToken.None);
 
         Assert.Equal("new-token", result.Token);
-        Assert.Equal("Thandi", patient.FirstName);
-        Assert.Equal("Ndlovu", patient.LastName);
+        Assert.Equal("Jane", patient.FirstName);
+        Assert.Equal("Doe", patient.LastName);
         Assert.Equal("0820000000", patient.Phone);
         Assert.Equal(new DateOnly(1991, 3, 12), patient.DateOfBirth);
         db.Verify(d => d.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -63,8 +63,8 @@ public class UpdateMyProfileHandlerTests
         {
             Id = Guid.NewGuid(),
             UserId = "user-1",
-            FirstName = "Sipho",
-            LastName = "Dlamini",
+            FirstName = "John",
+            LastName = "Doe",
             Email = "patient@phcis.local"
         };
 

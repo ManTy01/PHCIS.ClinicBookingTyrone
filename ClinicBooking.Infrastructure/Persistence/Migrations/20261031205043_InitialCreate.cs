@@ -260,8 +260,8 @@ namespace ClinicBooking.Infrastructure.Persistence.Migrations
                 columns: new[] { "Id", "Address", "Name", "Phone", "TimeZoneId" },
                 values: new object[,]
                 {
-                    { new Guid("8f1e3c2a-7b64-4d91-9c0e-1a2b3c4d5e6f"), "Diepkloof, Soweto", "Soweto Community Clinic", "011 000 1001", "South Africa Standard Time" },
-                    { new Guid("a4c8d912-3e70-4b55-8f21-9d6e5c4b3a20"), "Rivonia Road, Sandton", "Sandton Primary Care", "011 000 1002", "South Africa Standard Time" }
+                    { new Guid("8f1e3c2a-7b64-4d91-9c0e-1a2b3c4d5e6f"), "Jhb, Jhb", "Jhb Community Clinic", "011 000 1001", "South Africa Standard Time" },
+                    { new Guid("a4c8d912-3e70-4b55-8f21-9d6e5c4b3a20"), "Cpt Road, Cpt", "Cpt Primary Care", "011 000 1002", "South Africa Standard Time" }
                 });
 
             migrationBuilder.CreateIndex(

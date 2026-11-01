@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ClinicBooking.Infrastructure.Configuration;
 
-/// <summary>Maps Clinic. Unique name. Seeds Soweto + Sandton so GET /api/clinics is never empty after migrate. sealed: EF config, not inherited.</summary>
+/// <summary>Maps Clinic. Unique name. Seeds Jhb + Cpt so GET /api/clinics is never empty after migrate. sealed: EF config, not inherited.</summary>
 public sealed class ClinicConfiguration : IEntityTypeConfiguration<Clinic>
 {
     /// <summary>HasData uses SeedIds so tests and the UI can hard-code the two clinic GUIDs.</summary>
@@ -24,17 +24,17 @@ public sealed class ClinicConfiguration : IEntityTypeConfiguration<Clinic>
         builder.HasData(
             new Clinic
             {
-                Id = SeedIds.SowetoClinic,
-                Name = "Soweto Community Clinic",
-                Address = "Diepkloof, Soweto",
+                Id = SeedIds.JhbClinic,
+                Name = "Jhb Community Clinic",
+                Address = "Jhb, Jhb",
                 Phone = "011 000 1001",
                 TimeZoneId = "South Africa Standard Time"
             },
             new Clinic
             {
-                Id = SeedIds.SandtonClinic,
-                Name = "Sandton Primary Care",
-                Address = "Rivonia Road, Sandton",
+                Id = SeedIds.CptClinic,
+                Name = "Cpt Primary Care",
+                Address = "Cpt Road, Cpt",
                 Phone = "011 000 1002",
                 TimeZoneId = "South Africa Standard Time"
             });

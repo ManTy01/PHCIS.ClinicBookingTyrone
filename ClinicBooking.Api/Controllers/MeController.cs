@@ -43,7 +43,7 @@ public sealed class MeController(IMediator mediator) : ControllerBase
             cancellationToken);
     }
 
-    /// <summary>User id from the JWT — same claim fallback as AppointmentsController.</summary>
+    /// <summary>User id from the JWT - same claim fallback as AppointmentsController.</summary>
     private string CurrentUserId() =>
         User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub)

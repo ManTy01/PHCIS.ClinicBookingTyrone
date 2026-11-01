@@ -19,8 +19,8 @@ public class BookAppointmentHandlerTests
         {
             Id = Guid.NewGuid(),
             UserId = "user-1",
-            FirstName = "Sipho",
-            LastName = "Dlamini",
+            FirstName = "John",
+            LastName = "Doe",
             Email = "patient@phcis.local"
         };
         var slot = new TimeSlot
@@ -59,8 +59,8 @@ public class BookAppointmentHandlerTests
         {
             Id = Guid.NewGuid(),
             UserId = "user-1",
-            FirstName = "Sipho",
-            LastName = "Dlamini",
+            FirstName = "John",
+            LastName = "Doe",
             Email = "patient@phcis.local"
         };
         var slot = new TimeSlot

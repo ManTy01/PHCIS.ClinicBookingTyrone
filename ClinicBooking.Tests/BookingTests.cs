@@ -29,15 +29,15 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         _client = factory.CreateClient();
     }
 
-    /// <summary>Seed must expose Soweto and Sandton with no JWT.</summary>
+    /// <summary>Seed must expose Jhb and Cpt with no JWT.</summary>
     [Fact]
     public async Task GetClinics_ReturnsSeededClinics()
     {
         var clinics = await _client.GetFromJsonAsync<List<ClinicDto>>("/api/clinics", Json);
 
         Assert.NotNull(clinics);
-        Assert.Contains(clinics, c => c.Name.Contains("Soweto"));
-        Assert.Contains(clinics, c => c.Name.Contains("Sandton"));
+        Assert.Contains(clinics, c => c.Name.Contains("Jhb"));
+        Assert.Contains(clinics, c => c.Name.Contains("Cpt"));
     }
 
     /// <summary>Public board shows Booked status but JSON must not contain the patient name/email.</summary>
@@ -66,8 +66,8 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         Assert.NotNull(slots);
         var publicSlot = Assert.Single(slots!, s => s.Id == slot.Id);
         Assert.Equal(Domain.Enums.TimeSlotStatus.Booked, publicSlot.Status);
-        Assert.DoesNotContain("Sipho", json, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Dlamini", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("John", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Doe", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("patient@", json, StringComparison.OrdinalIgnoreCase);
 
         await LoginAsPatientAsync();
@@ -174,7 +174,7 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         Assert.NotNull(diary);
         var diarySlot = Assert.Single(diary!, s => s.Id == slot.Id);
         Assert.Equal(Domain.Enums.TimeSlotStatus.Booked, diarySlot.Status);
-        Assert.Contains("Sipho", diarySlot.PatientName, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("John", diarySlot.PatientName, StringComparison.OrdinalIgnoreCase);
 
         await LoginAsPatientAsync();
         var asPatient = await _client.GetAsync($"/api/staff/clinics/{clinicId}/diary?from={date:yyyy-MM-dd}&to={date:yyyy-MM-dd}");
@@ -195,7 +195,9 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
 
         await LoginAsStaffAsync();
         var blocked = await _client.PostAsync($"/api/staff/slots/{slot!.Id}/block", null);
-        Assert.Equal(HttpStatusCode.NoContent, blocked.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, blocked.StatusCode);
+        var blockedBody = await blocked.Content.ReadFromJsonAsync<SlotActionResult>(Json);
+        Assert.Contains("blocked", blockedBody!.Message, StringComparison.OrdinalIgnoreCase);
 
         _client.DefaultRequestHeaders.Authorization = null;
         var date = DateOnly.FromDateTime(slot.StartUtc.ToOffset(TimeSpan.FromHours(2)).DateTime);
@@ -210,7 +212,9 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
 
         await LoginAsStaffAsync();
         var unblocked = await _client.PostAsync($"/api/staff/slots/{slot.Id}/unblock", null);
-        Assert.Equal(HttpStatusCode.NoContent, unblocked.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unblocked.StatusCode);
+        var unblockedBody = await unblocked.Content.ReadFromJsonAsync<SlotActionResult>(Json);
+        Assert.Contains("available", unblockedBody!.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -262,8 +266,8 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         Assert.NotNull(profile);
         Assert.True(profile.IsPatient);
         Assert.Equal("patient@phcis.local", profile.Email);
-        Assert.Equal("Sipho", profile.FirstName);
-        Assert.Equal("Dlamini", profile.LastName);
+        Assert.Equal("John", profile.FirstName);
+        Assert.Equal("Doe", profile.LastName);
         Assert.Contains("Patient", profile.Roles);
     }
 
@@ -274,8 +278,8 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         var updated = await _client.PutAsJsonAsync("/api/me", new
         {
             email = "patient@phcis.local",
-            firstName = "Sipho",
-            lastName = "Dlamini",
+            firstName = "John",
+            lastName = "Doe",
             phone = "0820000000",
             dateOfBirth = "1990-05-01"
         });
@@ -304,11 +308,11 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
     public async Task CreateClinic_AsAdmin_AppearsInListWithHourSlots()
     {
         await LoginAsAdminAsync();
-        var name = $"Alexandra Clinic {Guid.NewGuid():N}";
+        var name = $"Durban Clinic {Guid.NewGuid():N}";
         var created = await _client.PostAsJsonAsync("/api/clinics", new
         {
             name,
-            address = "1 8th Avenue, Alexandra",
+            address = "18th Avenue, Durban",
             phone = "011 000 1003"
         });
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
@@ -330,11 +334,11 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
     public async Task UpdateClinic_AsAdmin_ChangesCard()
     {
         await LoginAsAdminAsync();
-        var name = $"Tembisa Clinic {Guid.NewGuid():N}";
+        var name = $"Kimberly Clinic {Guid.NewGuid():N}";
         var created = await _client.PostAsJsonAsync("/api/clinics", new
         {
             name,
-            address = "Tembisa Civic Centre",
+            address = "Kimberly Civic Centre",
             phone = "011 000 1004"
         });
         var clinic = await created.Content.ReadFromJsonAsync<ClinicDto>(Json);
@@ -344,7 +348,7 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         var updated = await _client.PutAsJsonAsync($"/api/clinics/{clinic.Id}", new
         {
             name = updatedName,
-            address = "Tembisa Hospital Road",
+            address = "Kimberly Hospital Road",
             phone = "011 000 1999"
         });
         Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
@@ -352,7 +356,7 @@ public class BookingTests : IClassFixture<ClinicBookingWebAppFactory>
         var clinics = await _client.GetFromJsonAsync<List<ClinicDto>>("/api/clinics", Json);
         var row = Assert.Single(clinics!, c => c.Id == clinic.Id);
         Assert.Equal(updatedName, row.Name);
-        Assert.Equal("Tembisa Hospital Road", row.Address);
+        Assert.Equal("Kimberly Hospital Road", row.Address);
         Assert.Equal("011 000 1999", row.Phone);
     }
 

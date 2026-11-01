@@ -31,8 +31,8 @@ public static class DatabaseSeeder
         }
 
         await EnsureUserAsync(userManager, db, "admin@phcis.local", Roles.Admin, "Clinic", "Admin", cancellationToken);
-        await EnsureUserAsync(userManager, db, "staff@phcis.local", Roles.ClinicStaff, "Thandi", "Nkosi", cancellationToken);
-        await EnsureUserAsync(userManager, db, "patient@phcis.local", Roles.Patient, "Sipho", "Dlamini", cancellationToken);
+        await EnsureUserAsync(userManager, db, "staff@phcis.local", Roles.ClinicStaff, "Jane", "Doe", cancellationToken);
+        await EnsureUserAsync(userManager, db, "patient@phcis.local", Roles.Patient, "John", "Doe", cancellationToken);
 
         await EnsureHourSlotsAsync(db, cancellationToken);
     }

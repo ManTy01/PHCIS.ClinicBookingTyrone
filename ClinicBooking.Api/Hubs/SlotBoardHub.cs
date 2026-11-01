@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 namespace ClinicBooking.Api.Hubs;
 
 /// <summary>
-/// PDF optional extra: SignalR real-time slot board.
+/// Optional extra: SignalR real-time slot board.
 ///
 /// Why a Hub (not a controller): browsers keep a WebSocket open. The server can push
 /// "this cell changed" without the UI polling GET /slots every second.
@@ -15,7 +15,7 @@ namespace ClinicBooking.Api.Hubs;
 /// on POST /api/appointments. Staff diary names come from a later HTTP GET with JWT.
 ///
 /// Why groups: JoinClinic puts this connection into "clinic:{guid}". Notify then
-/// sends to that group only — Sandton does not refresh when Soweto is booked.
+/// sends to that group only — Cpt does not refresh when clinic is booked.
 ///
 /// sealed: hubs are leaf types; we never inherit from this hub.
 /// </summary>

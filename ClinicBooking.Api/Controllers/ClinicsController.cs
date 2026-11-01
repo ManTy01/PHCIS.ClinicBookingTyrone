@@ -16,7 +16,7 @@ namespace ClinicBooking.Api.Controllers;
 [Route("api/clinics")]
 public sealed class ClinicsController(IMediator mediator) : ControllerBase
 {
-    /// <summary>Seeded clinics (Soweto + Sandton) plus any admin-added rows, for the home picker.</summary>
+    /// <summary>Seeded clinics plus any admin-added rows, for the home picker.</summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<ClinicDto>>> GetAll(CancellationToken cancellationToken)

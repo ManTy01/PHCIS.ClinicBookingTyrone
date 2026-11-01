@@ -1,4 +1,4 @@
-# Solution notes — PHCIS Clinic Booking
+# Solution notes - PHCIS Clinic Booking
 
 Written part of the senior practical (Tasks 1 and 2). The running product is the API + Blazor WASM in this repo.
 
@@ -20,13 +20,13 @@ Healthcare PHI is kept light: name, email, phone. No SA ID numbers, diagnoses, o
 | ID | Requirement | Where it lives |
 |---|---|---|
 | FR1 | Patient can see clinics | `GET /api/clinics`, Home page |
-| FR2 | Patient can see available (and taken) time slots | `GET /api/clinics/{id}/slots` — status only, no PII |
+| FR2 | Patient can see available (and taken) time slots | `GET /api/clinics/{id}/slots` - status only, no PII |
 | FR3 | Patient can book a slot and receive a confirmation | `POST /api/appointments` → `PHC-……`, Booking confirmed page |
 | FR4 | No double booking | Handler re-check + filtered unique index `UX_Appointments_TimeSlotId_Booked` → **409** |
 | FR5 | Cancel | `POST /api/appointments/{id}/cancel` frees the slot |
 | FR6 | Reschedule | Old row stays `Rescheduled`; new `Booked` row with `PreviousAppointmentId` |
 | FR7 | Register / login | ASP.NET Identity + JWT. Guest can pick a slot first; login completes the book |
-| FR8 | Staff diary | `GET /api/staff/clinics/{id}/diary` — names only here |
+| FR8 | Staff diary | `GET /api/staff/clinics/{id}/diary` - names only here |
 | FR9 | Staff can block a free hour | `POST /api/staff/slots/{id}/block` |
 | FR10 | Other browsers see a taken cell without refresh | SignalR `/hubs/slots` (status only, no names) |
 
@@ -45,7 +45,7 @@ Healthcare PHI is kept light: name, email, phone. No SA ID numbers, diagnoses, o
 
 ## 4. Architecture
 
-Modular **layered monolith** — not microservices. Four tables and one booking rule do not need a service mesh.
+Modular **layered monolith** - not microservices. Four tables and one booking rule do not need a service mesh.
 
 ```
 ClinicBooking.Blazor     WASM + Fluent UI. HttpClient only.
@@ -75,7 +75,7 @@ Browser → CORS + JWT → Controller → MediatR → FluentValidation → Handl
 | `AspNetUsers` / roles | Login. Patient, staff, and admin share Identity |
 | `Patients` | 1:1 profile for the Patient role (`UserId`) |
 | `Clinics` | Soweto + Sandton seeded |
-| `TimeSlots` | One-hour windows 08:00–16:00 SAST, weekdays. Status Available / Booked / Blocked |
+| `TimeSlots` | One-hour windows 08:00-16:00 SAST, weekdays. Status Available / Booked / Blocked |
 | `Appointments` | One patient on one slot. Confirmation code. History on cancel/reschedule |
 
 Capacity is **1**. A booked slot has exactly one active (`Status = Booked`) appointment.
@@ -146,7 +146,7 @@ erDiagram
     }
 ```
 
-## 7. Sequence — successful book (including guest)
+## 7. Sequence - successful book (including guest)
 
 ```mermaid
 sequenceDiagram
@@ -179,7 +179,7 @@ sequenceDiagram
     end
 ```
 
-## 8. Sequence — two patients, one slot
+## 8. Sequence - two patients, one slot
 
 ```mermaid
 sequenceDiagram
@@ -200,7 +200,7 @@ sequenceDiagram
 
 The UI check is not the lock. The lock is the filtered unique index plus the handler status check.
 
-## 9. Flow — slot lifecycle
+## 9. Flow - slot lifecycle
 
 ```mermaid
 flowchart LR
@@ -232,6 +232,6 @@ Reschedule: old appointment row → `Rescheduled` (kept). Old slot → `Availabl
 | Docker | `docker compose up --build` |
 | GitHub Actions | `.github/workflows/ci.yml` |
 | GraphQL / Twilio / Calendar | **Skipped** (optional) |
-| SignalR | `SlotBoardHub` `/hubs/slots` — live slot status, no PII |
-| Playwright / bUnit | **Not built** — Task 4 asks for basic unit tests; those are xUnit |
+| SignalR | `SlotBoardHub` `/hubs/slots` - live slot status, no PII |
+| Playwright / bUnit | **Not built** - Task 4 asks for basic unit tests; those are xUnit |
 

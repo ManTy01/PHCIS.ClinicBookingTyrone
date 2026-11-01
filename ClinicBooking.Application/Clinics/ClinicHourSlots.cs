@@ -4,7 +4,7 @@ using ClinicBooking.Domain.Enums;
 namespace ClinicBooking.Application.Clinics;
 
 /// <summary>
-/// Shared 08:00–16:00 weekday grid. The seeder uses this for Soweto/Sandton;
+/// Shared 08:00–16:00 weekday grid. The seeder uses this for Jhb/Cpt;
 /// CreateClinicCommand uses it so an admin-added clinic is bookable immediately.
 /// sealed is not used — static helper, not a type we inherit from.
 /// </summary>

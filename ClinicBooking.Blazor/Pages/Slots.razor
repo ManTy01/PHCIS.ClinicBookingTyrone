@@ -46,6 +46,7 @@ else if (_slots.Count == 0)
 }
 else
 {
+    <div class="schedule-page">
     <div class="schedule-grid">
         <div class="schedule-corner"></div>
         @foreach (var day in Days)
@@ -82,7 +83,8 @@ else
         }
     </div>
 
-    <div class="book-bar">
+    @* Docked to the viewport bottom so a clicked hour is visible without scrolling past the grid. *@
+    <div class="book-bar @(_selected is null ? null : "has-selection")">
         @if (_selected is null)
         {
             <span>Select a free hour, then book.</span>
@@ -94,6 +96,7 @@ else
                 @(_rescheduleId is null ? "Book now" : "Confirm new time")
             </FluentButton>
         }
+    </div>
     </div>
 }
 

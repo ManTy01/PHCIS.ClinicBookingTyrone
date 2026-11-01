@@ -23,11 +23,11 @@ public class CreateClinicHandlerTests
 
         var handler = new CreateClinicCommandHandler(db.Object);
         var result = await handler.Handle(
-            new CreateClinicCommand(" Alexandra Clinic ", "1 8th Avenue", " 011 000 1003 "),
+            new CreateClinicCommand(" Durban Clinic ", "18th Avenue", " 011 000 1003 "),
             CancellationToken.None);
 
-        Assert.Equal("Alexandra Clinic", result.Name);
-        Assert.Equal("1 8th Avenue", result.Address);
+        Assert.Equal("Durban Clinic", result.Name);
+        Assert.Equal("18th Avenue", result.Address);
         Assert.Equal("011 000 1003", result.Phone);
         Assert.Single(clinics);
         Assert.Equal(ClinicHourSlots.DefaultTimeZoneId, clinics[0].TimeZoneId);
@@ -44,8 +44,8 @@ public class CreateClinicHandlerTests
         var existing = new Clinic
         {
             Id = Guid.NewGuid(),
-            Name = "Soweto Community Clinic",
-            Address = "Diepkloof, Soweto",
+            Name = "Jhb Community Clinic",
+            Address = "Jhb, Jhb",
             TimeZoneId = ClinicHourSlots.DefaultTimeZoneId
         };
         var db = new Mock<IAppDbContext>();
@@ -53,7 +53,7 @@ public class CreateClinicHandlerTests
 
         var handler = new CreateClinicCommandHandler(db.Object);
         await Assert.ThrowsAsync<ConflictException>(() => handler.Handle(
-            new CreateClinicCommand("Soweto Community Clinic", "Somewhere else", null),
+            new CreateClinicCommand("Jhb Community Clinic", "Somewhere else", null),
             CancellationToken.None));
     }
 
