@@ -1,0 +1,242 @@
+@page "/staff/diary"
+@page "/staff/diary/{ClinicId:guid}"
+@implements IAsyncDisposable
+@attribute [Authorize(Roles = "ClinicStaff,Admin")]
+@* Staff JWT. Names live here only — public /slots never joins Patient. SignalR reloads names after a book. *@
+@inject ClinicApiClient Api
+@inject NavigationManager Navigation
+@inject SlotBoardClient Board
+
+<PageTitle>Staff diary</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">Clinic staff</span>
+    <h1>Staff diary</h1>
+    <p class="page-lead">Patient names stay on this board only. Block takes a free hour off the public grid. Live updates via SignalR.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Success">@_message</FluentMessageBar>
+}
+
+@if (_clinics is { Count: > 0 })
+{
+    <div class="schedule-weekbar">
+        <label>
+            Clinic
+            <select class="phcis-select" @bind="_clinicIdText" @bind:after="OnClinicChangedAsync">
+                @foreach (var clinic in _clinics)
+                {
+                    <option value="@clinic.Id">@clinic.Name</option>
+                }
+            </select>
+        </label>
+        <FluentStack HorizontalGap="8" VerticalGap="8">
+            <FluentButton OnClick="PreviousWeek">Previous week</FluentButton>
+            <strong>@_weekStart.ToString("ddd d MMM") – @_weekEnd.ToString("ddd d MMM yyyy")</strong>
+            <FluentButton OnClick="NextWeek">Next week</FluentButton>
+        </FluentStack>
+    </div>
+}
+
+@if (_slots is null)
+{
+    <p>Loading…</p>
+}
+else if (_slots.Count == 0)
+{
+    <p>No slots this week.</p>
+}
+else
+{
+    <div class="schedule-grid">
+        <div class="schedule-corner"></div>
+        @foreach (var day in Days)
+        {
+            <div class="schedule-day">@day.ToString("ddd d")</div>
+        }
+
+        @foreach (var time in Times)
+        {
+            <div class="schedule-time">@time.ToString(@"hh\:mm")</div>
+            @foreach (var day in Days)
+            {
+                var slot = SlotAt(day, time);
+                if (slot is null)
+                {
+                    <div class="slot-cell empty"></div>
+                }
+                else if (slot.Status == TimeSlotStatus.Booked)
+                {
+                    <div class="slot-cell diary-booked" title="@slot.ConfirmationCode">
+                        <strong>@slot.PatientName</strong>
+                        <span>@slot.ConfirmationCode</span>
+                    </div>
+                }
+                else if (slot.Status == TimeSlotStatus.Blocked)
+                {
+                    <button type="button" class="slot-cell blocked" disabled="@_busy" @onclick="() => UnblockAsync(slot)">
+                        Blocked — unblock
+                    </button>
+                }
+                else
+                {
+                    <button type="button" class="slot-cell open" disabled="@_busy" @onclick="() => BlockAsync(slot)">
+                        Free — block
+                    </button>
+                }
+            }
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid? ClinicId { get; set; }
+
+    private List<ClinicDto>? _clinics;
+    private List<DiarySlotDto>? _slots;
+    private DateOnly _weekStart = SastSchedule.UpcomingWeekStart();
+    private string _clinicIdText = string.Empty;
+    private string? _error;
+    private string? _message;
+    private bool _busy;
+    private Guid _clinicId;
+
+    private DateOnly _weekEnd => _weekStart.AddDays(4);
+    private IReadOnlyList<DateOnly> Days => Enumerable.Range(0, 5).Select(i => _weekStart.AddDays(i)).ToList();
+
+    private IReadOnlyList<TimeSpan> Times
+    {
+        get
+        {
+            if (_slots is { Count: > 0 })
+            {
+                return _slots
+                    .Select(s => SastSchedule.TruncateToMinute(SastSchedule.ToSast(s.StartUtc).TimeOfDay))
+                    .Distinct()
+                    .OrderBy(t => t)
+                    .ToList();
+            }
+
+            return Enumerable.Range(8, 8).Select(h => TimeSpan.FromHours(h)).ToList();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _clinics = await Api.GetClinicsAsync();
+            _clinicId = ClinicId ?? _clinics.FirstOrDefault()?.Id ?? Guid.Empty;
+            _clinicIdText = _clinicId.ToString();
+            if (_clinicId != Guid.Empty)
+            {
+                await LoadWeekAsync();
+                await Board.WatchClinicAsync(_clinicId, OnSlotChangedAsync);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task OnClinicChangedAsync()
+    {
+        if (Guid.TryParse(_clinicIdText, out var id) && id != _clinicId)
+        {
+            Navigation.NavigateTo($"/staff/diary/{id}");
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task PreviousWeek()
+    {
+        _weekStart = _weekStart.AddDays(-7);
+        await LoadWeekAsync();
+    }
+
+    private async Task NextWeek()
+    {
+        _weekStart = _weekStart.AddDays(7);
+        await LoadWeekAsync();
+    }
+
+    /// <summary>GET /api/staff/.../diary — 403 if the JWT role is Patient.</summary>
+    private async Task LoadWeekAsync()
+    {
+        _error = null;
+        _slots = await Api.GetDiaryAsync(_clinicId, _weekStart, _weekEnd);
+    }
+
+    private DiarySlotDto? SlotAt(DateOnly day, TimeSpan time) =>
+        _slots?.FirstOrDefault(s =>
+            SastSchedule.ToSastDate(s.StartUtc) == day
+            && SastSchedule.TruncateToMinute(SastSchedule.ToSast(s.StartUtc).TimeOfDay) == time);
+
+    /// <summary>POST block — cell shows Blocked on the public board, no name.</summary>
+    private async Task BlockAsync(DiarySlotDto slot)
+    {
+        await RunAsync(async () =>
+        {
+            await Api.BlockSlotAsync(slot.Id);
+            _message = $"Blocked {SastSchedule.Format(slot.StartUtc)}.";
+        });
+    }
+
+    private async Task UnblockAsync(DiarySlotDto slot)
+    {
+        await RunAsync(async () =>
+        {
+            await Api.UnblockSlotAsync(slot.Id);
+            _message = $"Unblocked {SastSchedule.Format(slot.StartUtc)}.";
+        });
+    }
+
+    /// <summary>
+    /// SignalR only said "this slot changed". Reload diary over HTTP (JWT) so names never ride the socket.
+    /// </summary>
+    private async Task OnSlotChangedAsync(SlotBoardChange change)
+    {
+        if (change.ClinicId != _clinicId)
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            await LoadWeekAsync();
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>Leave the SignalR group when navigating away from the diary.</summary>
+    public async ValueTask DisposeAsync() => await Board.StopWatchingAsync();
+
+    /// <summary>Shared busy/error wrapper so block and unblock both refresh the week.</summary>
+    private async Task RunAsync(Func<Task> action)
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await action();
+            await LoadWeekAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

@@ -1,0 +1,67 @@
+@inherits LayoutComponentBase
+@* Fluent UI shell: brand left, JWT identity right (click email → /profile). *@
+@inject AuthSession Session
+@inject JwtAuthStateProvider Auth
+@inject NavigationManager Navigation
+
+<FluentLayout Height="100vh">
+    <FluentLayoutItem Area="LayoutArea.Header" Sticky="true">
+        <div class="phcis-header">
+            <div class="phcis-header-left">
+                <FluentLayoutHamburger />
+                <a class="phcis-brand" href="/" @onclick="GoHome" @onclick:preventDefault="true">
+                    <span class="phcis-mark" aria-hidden="true">PHC</span>
+                    <span class="phcis-brand-text">
+                        <span class="phcis-kicker">Primary Health Care</span>
+                        <span class="phcis-title">Clinic Booking</span>
+                    </span>
+                </a>
+            </div>
+            <div class="phcis-header-right">
+                <AuthorizeView>
+                    <Authorized>
+                        <a class="phcis-user" href="/profile" @onclick="GoProfile" @onclick:preventDefault="true" title="Edit my details">@Session.Email</a>
+                        <FluentButton Appearance="ButtonAppearance.Subtle" OnClick="LogoutAsync">Sign out</FluentButton>
+                    </Authorized>
+                    <NotAuthorized>
+                        <FluentButton Appearance="ButtonAppearance.Subtle" OnClick="GoRegister">Register</FluentButton>
+                        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="GoLogin">Sign in</FluentButton>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </FluentLayoutItem>
+
+    <FluentLayoutItem Area="LayoutArea.Navigation" Width="248px">
+        <NavMenu />
+    </FluentLayoutItem>
+
+    <FluentLayoutItem Area="LayoutArea.Content">
+        <div class="phcis-content">
+            @Body
+        </div>
+    </FluentLayoutItem>
+
+    <FluentLayoutItem Area="LayoutArea.Footer">
+        <div class="phcis-footer">Weekday hours 08:00–16:00 SAST · Booking rules stay on the API</div>
+    </FluentLayoutItem>
+</FluentLayout>
+<FluentProviders />
+
+@code {
+    private void GoHome() => Navigation.NavigateTo("/");
+
+    private void GoLogin() => Navigation.NavigateTo("/login");
+
+    private void GoRegister() => Navigation.NavigateTo("/register");
+
+    private void GoProfile() => Navigation.NavigateTo("/profile");
+
+    /// <summary>Drop JWT from localStorage and send the user to sign in.</summary>
+    private async Task LogoutAsync()
+    {
+        await Session.ClearAsync();
+        Auth.Notify();
+        Navigation.NavigateTo("/login");
+    }
+}

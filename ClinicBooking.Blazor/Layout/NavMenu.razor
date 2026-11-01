@@ -1,0 +1,31 @@
+@* Role-based nav. AuthorizeView reads JWT claims from JwtAuthStateProvider. *@
+@inject NavigationManager Navigation
+
+<FluentNav>
+    <FluentNavSectionHeader>Booking</FluentNavSectionHeader>
+    <FluentNavItem Href="/" Match="NavLinkMatch.All" OnClick="GoHome">Clinics</FluentNavItem>
+    <AuthorizeView>
+        <Authorized>
+            <FluentNavItem Href="/profile">My details</FluentNavItem>
+        </Authorized>
+    </AuthorizeView>
+    <AuthorizeView Roles="Patient">
+        <FluentNavItem Href="/appointments">My appointments</FluentNavItem>
+    </AuthorizeView>
+    <AuthorizeView Roles="ClinicStaff,Admin">
+        <FluentNavSectionHeader>Clinic</FluentNavSectionHeader>
+        <FluentNavItem Href="/staff/diary">Staff diary</FluentNavItem>
+    </AuthorizeView>
+    <AuthorizeView>
+        <NotAuthorized>
+            <FluentDivider />
+            <FluentNavItem Href="/login">Sign in</FluentNavItem>
+            <FluentNavItem Href="/register">Register</FluentNavItem>
+        </NotAuthorized>
+    </AuthorizeView>
+</FluentNav>
+
+@code {
+    /// <summary>Href="/" plus NavigateTo so the Clinics item does not stick when already on home.</summary>
+    private void GoHome() => Navigation.NavigateTo("/");
+}

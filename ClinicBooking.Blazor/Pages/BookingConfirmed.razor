@@ -1,0 +1,38 @@
+@page "/booking-confirmed"
+@* PDF confirmation message: code + SAST time from query string after a successful book. *@
+@inject NavigationManager Navigation
+
+<PageTitle>Booking confirmed</PageTitle>
+
+<FluentCard Class="confirm-card">
+    <div class="page-hero">
+        <span class="page-kicker">Confirmation</span>
+        <h1>Booking confirmed</h1>
+        <p class="page-lead">Your appointment is reserved.</p>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(Code))
+    {
+        <p>Code</p>
+        <p class="confirm-code">@Code</p>
+    }
+    @if (DateTimeOffset.TryParse(Start, out var start))
+    {
+        <p>When: @SastSchedule.Format(start) (SAST)</p>
+    }
+    <div class="clinic-actions">
+        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="GoAppointments">My appointments</FluentButton>
+        <FluentButton Appearance="ButtonAppearance.Outline" OnClick="GoClinics">Back to clinics</FluentButton>
+    </div>
+</FluentCard>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? Code { get; set; }
+
+    [SupplyParameterFromQuery]
+    public string? Start { get; set; }
+
+    private void GoAppointments() => Navigation.NavigateTo("/appointments");
+
+    private void GoClinics() => Navigation.NavigateTo("/");
+}

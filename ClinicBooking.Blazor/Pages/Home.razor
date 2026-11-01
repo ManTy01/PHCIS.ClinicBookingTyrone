@@ -1,0 +1,71 @@
+@page "/"
+@* Home: public clinic picker. No JWT required. Staff also get a diary button via AuthorizeView. *@
+@inject ClinicApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>Clinics</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">Book a visit</span>
+    <h1>Clinics</h1>
+    <p class="page-lead">Pick a clinic, then a weekday hour (08:00–16:00 SAST). Availability is decided on the API, not in this page.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+else if (_clinics is null)
+{
+    <p>Loading clinics…</p>
+}
+else
+{
+    <FluentGrid Spacing="3">
+        @foreach (var clinic in _clinics)
+        {
+            <FluentGridItem Xs="12" Md="6">
+                <FluentCard Class="clinic-card">
+                    <h3>@clinic.Name</h3>
+                    <p class="clinic-meta">@clinic.Address</p>
+                    <p class="clinic-meta">@clinic.Phone</p>
+                    <div class="clinic-actions">
+                        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="() => OpenSlots(clinic.Id)">
+                            View schedule
+                        </FluentButton>
+                        <AuthorizeView Roles="ClinicStaff,Admin">
+                            <Authorized>
+                                <FluentButton Appearance="ButtonAppearance.Outline" OnClick="() => OpenDiary(clinic.Id)">
+                                    Staff diary
+                                </FluentButton>
+                            </Authorized>
+                        </AuthorizeView>
+                    </div>
+                </FluentCard>
+            </FluentGridItem>
+        }
+    </FluentGrid>
+}
+
+@code {
+    private List<ClinicDto>? _clinics;
+    private string? _error;
+
+    /// <summary>GET /api/clinics — anonymous.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _clinics = await Api.GetClinicsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message + " Is the API running at https://localhost:7088 ?";
+        }
+    }
+
+    private void OpenSlots(Guid clinicId) => Navigation.NavigateTo($"/clinics/{clinicId}/slots");
+
+    /// <summary>Staff-only; route is [Authorize(Roles = ClinicStaff,Admin)].</summary>
+    private void OpenDiary(Guid clinicId) => Navigation.NavigateTo($"/staff/diary/{clinicId}");
+}

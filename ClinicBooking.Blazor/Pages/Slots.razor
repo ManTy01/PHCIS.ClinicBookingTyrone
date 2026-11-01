@@ -1,0 +1,298 @@
+@page "/clinics/{ClinicId:guid}/slots"
+@implements IAsyncDisposable
+@* Public week grid. Booked cells are disabled with no names. Guest Book now saves sessionStorage then /login. SignalR reloads when another browser books. *@
+@inject ClinicApiClient Api
+@inject NavigationManager Navigation
+@inject AuthSession Session
+@inject PendingBookingStore Pending
+@inject SlotBoardClient Board
+
+<PageTitle>Schedule</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">@(_rescheduleId is null ? "Public board" : "Reschedule")</span>
+    <h1>@(_rescheduleId is null ? _clinicName : "Pick a new hour")</h1>
+    <p class="page-lead">
+        @(_rescheduleId is null
+            ? "One-hour cells. Booked and blocked hours are disabled — no patient names. Times are SAST. Other browsers update live (SignalR)."
+            : "The old booking is kept as Rescheduled. Only a free hour can be selected.")
+    </p>
+</div>
+
+<div class="schedule-weekbar">
+    <FluentStack HorizontalGap="8" VerticalGap="8">
+        <FluentButton OnClick="PreviousWeek">Previous week</FluentButton>
+        <strong>@_weekStart.ToString("ddd d MMM") – @_weekEnd.ToString("ddd d MMM yyyy")</strong>
+        <FluentButton OnClick="NextWeek">Next week</FluentButton>
+    </FluentStack>
+</div>
+
+@if (_taken)
+{
+    <FluentMessageBar Intent="MessageBarIntent.Warning">That time was booked while you were signing in. Pick another hour.</FluentMessageBar>
+}
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+
+@if (_slots is null)
+{
+    <p>Loading…</p>
+}
+else if (_slots.Count == 0)
+{
+    <p>No slots this week. Use next week — seed covers the next 10 weekdays.</p>
+}
+else
+{
+    <div class="schedule-grid">
+        <div class="schedule-corner"></div>
+        @foreach (var day in Days)
+        {
+            <div class="schedule-day">@day.ToString("ddd d")</div>
+        }
+
+        @foreach (var time in Times)
+        {
+            <div class="schedule-time">@time.ToString(@"hh\:mm")</div>
+            @foreach (var day in Days)
+            {
+                var slot = SlotAt(day, time);
+                if (slot is null)
+                {
+                    <div class="slot-cell empty"></div>
+                }
+                else if (slot.Status == TimeSlotStatus.Blocked)
+                {
+                    <div class="slot-cell blocked" title="Blocked by clinic">Blocked</div>
+                }
+                else if (!CanSelect(slot))
+                {
+                    <div class="slot-cell booked" title="Unavailable">Booked</div>
+                }
+                else
+                {
+                    var selected = _selected?.Id == slot.Id;
+                    <button type="button" class="slot-cell open @(selected ? "selected" : null)" @onclick="() => Select(slot)">
+                        @time.ToString(@"hh\:mm")
+                    </button>
+                }
+            }
+        }
+    </div>
+
+    <div class="book-bar">
+        @if (_selected is null)
+        {
+            <span>Select a free hour, then book.</span>
+        }
+        else
+        {
+            <span>Selected: @SastSchedule.Format(_selected.StartUtc)</span>
+            <FluentButton Appearance="ButtonAppearance.Primary" Disabled="_busy" OnClick="ConfirmAsync">
+                @(_rescheduleId is null ? "Book now" : "Confirm new time")
+            </FluentButton>
+        }
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid ClinicId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "reschedule")]
+    public Guid? RescheduleId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public int Taken { get; set; }
+
+    private Guid? _rescheduleId;
+    private bool _taken;
+    private DateOnly _weekStart = SastSchedule.UpcomingWeekStart();
+    private List<TimeSlotDto>? _slots;
+    private TimeSlotDto? _selected;
+    private string _clinicName = "Clinic";
+    private string? _error;
+    private bool _busy;
+
+    private DateOnly _weekEnd => _weekStart.AddDays(4);
+    private IReadOnlyList<DateOnly> Days => Enumerable.Range(0, 5).Select(i => _weekStart.AddDays(i)).ToList();
+
+    private IReadOnlyList<TimeSpan> Times
+    {
+        get
+        {
+            if (_slots is { Count: > 0 })
+            {
+                return _slots
+                    .Select(s => SastSchedule.TruncateToMinute(SastSchedule.ToSast(s.StartUtc).TimeOfDay))
+                    .Distinct()
+                    .OrderBy(t => t)
+                    .ToList();
+            }
+
+            return Enumerable.Range(8, 8).Select(h => TimeSpan.FromHours(h)).ToList();
+        }
+    }
+
+    /// <summary>Clinic id and ?taken=1 / ?reschedule= come from the URL.</summary>
+    protected override async Task OnParametersSetAsync()
+    {
+        _rescheduleId = RescheduleId;
+        _taken = Taken == 1;
+        try
+        {
+            var clinics = await Api.GetClinicsAsync();
+            _clinicName = clinics.FirstOrDefault(c => c.Id == ClinicId)?.Name ?? "Clinic";
+            await LoadWeekAsync();
+            await Board.WatchClinicAsync(ClinicId, OnSlotChangedAsync);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task PreviousWeek()
+    {
+        _weekStart = _weekStart.AddDays(-7);
+        _selected = null;
+        await LoadWeekAsync();
+    }
+
+    private async Task NextWeek()
+    {
+        _weekStart = _weekStart.AddDays(7);
+        _selected = null;
+        await LoadWeekAsync();
+    }
+
+    /// <summary>Public GET slots — no JWT. Status Booked/Blocked paint disabled cells.</summary>
+    private async Task LoadWeekAsync()
+    {
+        _error = null;
+        _slots = await Api.GetSlotsAsync(ClinicId, _weekStart, _weekEnd);
+    }
+
+    private TimeSlotDto? SlotAt(DateOnly day, TimeSpan time) =>
+        _slots?.FirstOrDefault(s =>
+        {
+            var local = SastSchedule.ToSast(s.StartUtc);
+            return SastSchedule.ToSastDate(s.StartUtc) == day
+                && SastSchedule.TruncateToMinute(local.TimeOfDay) == time;
+        });
+
+    private static bool CanSelect(TimeSlotDto slot) =>
+        slot.Status == TimeSlotStatus.Available && slot.StartUtc > DateTimeOffset.UtcNow;
+
+    private void Select(TimeSlotDto slot) => _selected = slot;
+
+    /// <summary>Logged in → POST book/reschedule with JWT. Guest → save pending slot and go to login.</summary>
+    private async Task ConfirmAsync()
+    {
+        if (_selected is null || _busy)
+        {
+            return;
+        }
+
+        _error = null;
+        _busy = true;
+        try
+        {
+            if (_rescheduleId is Guid appointmentId)
+            {
+                if (!Session.IsLoggedIn)
+                {
+                    Navigation.NavigateTo("/login?returnUrl=" + Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri)));
+                    return;
+                }
+
+                var result = await Api.RescheduleAsync(appointmentId, _selected.Id);
+                Navigation.NavigateTo(ConfirmationUrl(result));
+                return;
+            }
+
+            if (!Session.IsLoggedIn)
+            {
+                await Pending.SaveAsync(new PendingBooking(
+                    ClinicId,
+                    _selected.Id,
+                    SastSchedule.ToSastDate(_selected.StartUtc)));
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            await SubmitSelectedAsync();
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            _error = "That time was just booked. Pick another slot.";
+            _selected = null;
+            await LoadWeekAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+            await LoadWeekAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SubmitSelectedAsync()
+    {
+        if (_selected is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var result = await Api.BookAsync(_selected.Id);
+            await Pending.ClearAsync();
+            Navigation.NavigateTo(ConfirmationUrl(result));
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            _error = "That time was just booked. Pick another slot.";
+            _selected = null;
+            await LoadWeekAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private static string ConfirmationUrl(BookAppointmentResult result) =>
+        $"/booking-confirmed?code={Uri.EscapeDataString(result.ConfirmationCode)}&start={Uri.EscapeDataString(result.StartUtc.ToString("o"))}";
+
+    /// <summary>
+    /// SignalR callback. InvokeAsync because the socket thread is not the Blazor renderer.
+    /// If this tab had that hour selected, clear it — it is no longer free.
+    /// </summary>
+    private async Task OnSlotChangedAsync(SlotBoardChange change)
+    {
+        if (change.ClinicId != ClinicId)
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            if (_selected?.Id == change.TimeSlotId)
+            {
+                _selected = null;
+            }
+
+            await LoadWeekAsync();
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>Leave the SignalR clinic group so this disposed page does not keep receiving events.</summary>
+    public async ValueTask DisposeAsync() => await Board.StopWatchingAsync();
+}

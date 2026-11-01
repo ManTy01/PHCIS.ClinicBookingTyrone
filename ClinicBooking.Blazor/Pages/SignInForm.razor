@@ -1,0 +1,49 @@
+@* Shared login fields. Stores the JWT (PDF) in AuthSession/localStorage then notifies AuthorizeView. *@
+@inject ClinicApiClient Api
+@inject AuthSession Session
+@inject JwtAuthStateProvider Auth
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+
+<FluentCard Class="auth-card">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentTextInput Label="Email" TextInputType="TextInputType.Email" @bind-Value="_email" />
+        <FluentTextInput Label="Password" TextInputType="TextInputType.Password" @bind-Value="_password" />
+        <FluentButton Appearance="ButtonAppearance.Primary" Disabled="_busy" OnClick="SignInAsync">Sign in</FluentButton>
+    </FluentStack>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public EventCallback OnAuthenticated { get; set; }
+
+    private string _email = "patient@phcis.local";
+    private string _password = "Password123!";
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>POST /api/auth/login → JWT → localStorage → header re-renders as signed in.</summary>
+    private async Task SignInAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Api.LoginAsync(_email, _password);
+            await Session.SetAsync(result.Token, result.Email);
+            Auth.Notify();
+            await OnAuthenticated.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

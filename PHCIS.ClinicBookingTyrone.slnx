@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="ClinicBooking.Api/ClinicBooking.Api.csproj" />
+  <Project Path="ClinicBooking.Application/ClinicBooking.Application.csproj" />
+  <Project Path="ClinicBooking.Blazor/ClinicBooking.Blazor.csproj" />
+  <Project Path="ClinicBooking.Domain/ClinicBooking.Domain.csproj" />
+  <Project Path="ClinicBooking.Infrastructure/ClinicBooking.Infrastructure.csproj" />
+  <Project Path="ClinicBooking.Tests/ClinicBooking.Tests.csproj" />
+</Solution>

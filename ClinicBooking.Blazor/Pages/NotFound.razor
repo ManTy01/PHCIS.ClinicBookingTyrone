@@ -1,0 +1,15 @@
+@page "/not-found"
+@layout MainLayout
+@* Router NotFoundPage — unknown URL, not a 404 from the API. *@
+@inject NavigationManager Navigation
+
+<div class="page-hero">
+    <span class="page-kicker">Missing page</span>
+    <h1>Not found</h1>
+    <p class="page-lead">That address is not part of the booking app.</p>
+</div>
+<FluentButton Appearance="ButtonAppearance.Primary" OnClick="GoHome">Back to clinics</FluentButton>
+
+@code {
+    private void GoHome() => Navigation.NavigateTo("/");
+}

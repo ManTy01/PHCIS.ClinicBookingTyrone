@@ -1,0 +1,59 @@
+# SQL Server + API + Blazor WASM.
+# From the repo root:
+#   docker compose up --build
+# First run downloads the SQL image (slow). Then:
+#   API  http://localhost:8080/swagger
+#   Web  http://localhost:8081
+#
+# Visual Studio F5 is unchanged — it still uses LocalDB.
+
+services:
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:-ClinicB00king!Dev}
+    ports:
+      - "1433:1433"
+    volumes:
+      - clinicbooking-sql:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/1433'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    depends_on:
+      sql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__Default: Server=sql,1433;Database=ClinicBooking;User Id=sa;Password=${MSSQL_SA_PASSWORD:-ClinicB00king!Dev};TrustServerCertificate=True;MultipleActiveResultSets=true
+      Cors__Origins__0: http://localhost:8081
+      Cors__Origins__1: https://localhost:7276
+      Cors__Origins__2: http://localhost:5018
+      DisableHttpsRedirection: "true"
+      EnableSwagger: "true"
+      MigrateOnStartup: "true"
+    ports:
+      - "8080:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args:
+        API_BASE_URL: http://localhost:8080/
+    depends_on:
+      - api
+    ports:
+      - "8081:80"
+
+volumes:
+  clinicbooking-sql:

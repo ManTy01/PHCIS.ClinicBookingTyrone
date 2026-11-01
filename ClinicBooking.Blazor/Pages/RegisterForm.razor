@@ -1,0 +1,53 @@
+@* Patient register form. API FluentValidation still runs; this is the UI submit. *@
+@inject ClinicApiClient Api
+@inject AuthSession Session
+@inject JwtAuthStateProvider Auth
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+
+<FluentCard Class="auth-card">
+    <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+        <FluentTextInput Label="First name" @bind-Value="_firstName" />
+        <FluentTextInput Label="Last name" @bind-Value="_lastName" />
+        <FluentTextInput Label="Email" TextInputType="TextInputType.Email" @bind-Value="_email" />
+        <FluentTextInput Label="Password" TextInputType="TextInputType.Password" @bind-Value="_password" />
+        <FluentButton Appearance="ButtonAppearance.Primary" Disabled="_busy" OnClick="RegisterAsync">Create account</FluentButton>
+    </FluentStack>
+</FluentCard>
+
+@code {
+    [Parameter]
+    public EventCallback OnAuthenticated { get; set; }
+
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string? _error;
+    private bool _busy;
+
+    /// <summary>POST /api/auth/register — returns JWT so we can book without a second login.</summary>
+    private async Task RegisterAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            var result = await Api.RegisterAsync(_email, _password, _firstName, _lastName);
+            await Session.SetAsync(result.Token, result.Email);
+            Auth.Notify();
+            await OnAuthenticated.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

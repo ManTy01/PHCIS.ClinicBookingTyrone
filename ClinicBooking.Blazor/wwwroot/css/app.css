@@ -1,0 +1,359 @@
+:root {
+    --phcis-ink: #10231f;
+    --phcis-muted: #5b706b;
+    --phcis-line: #d7e3df;
+    --phcis-bg: #eef4f2;
+    --phcis-card: #ffffff;
+    --phcis-accent: #0f766e;
+    --phcis-accent-strong: #115e59;
+    --colorBrandBackground: #0f766e;
+    --colorBrandBackgroundHover: #0d9488;
+    --colorBrandBackgroundPressed: #115e59;
+    --colorBrandForeground1: #0f766e;
+}
+
+html, body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--phcis-bg);
+    color: var(--phcis-ink);
+}
+
+h1:focus {
+    outline: none;
+}
+
+a {
+    color: var(--phcis-accent-strong);
+}
+
+.page-hero {
+    margin-bottom: 1.25rem;
+}
+
+.page-kicker {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--phcis-muted);
+    margin-bottom: 0.35rem;
+}
+
+.page-hero h1 {
+    margin: 0 0 0.35rem;
+    font-size: 1.7rem;
+    font-weight: 650;
+}
+
+.page-lead {
+    margin: 0;
+    color: var(--phcis-muted);
+    max-width: 42rem;
+}
+
+.clinic-card {
+    height: 100%;
+}
+
+.clinic-card h3 {
+    margin: 0 0 0.4rem;
+    font-size: 1.15rem;
+}
+
+.clinic-meta {
+    margin: 0 0 0.35rem;
+    color: var(--phcis-muted);
+    font-size: 0.92rem;
+}
+
+.clinic-actions {
+    margin-top: 0.85rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.auth-card {
+    max-width: 26rem;
+}
+
+.profile-dob {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.875rem;
+}
+
+.profile-dob-input {
+    min-height: 2rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--phcis-border, #c5d5d0);
+    border-radius: 0.35rem;
+    font: inherit;
+}
+
+.auth-switch {
+    margin-top: 1rem;
+    color: var(--phcis-muted);
+}
+
+.auth-hint {
+    margin: 0 0 1rem;
+    color: var(--phcis-muted);
+}
+
+.auth-hint code {
+    color: var(--phcis-accent-strong);
+}
+
+.phcis-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--phcis-line);
+    border-radius: 0.75rem;
+    background: var(--phcis-card);
+}
+
+.phcis-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.phcis-table th,
+.phcis-table td {
+    padding: 0.75rem 0.9rem;
+    text-align: left;
+    border-bottom: 1px solid var(--phcis-line);
+    vertical-align: middle;
+}
+
+.phcis-table th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--phcis-muted);
+    background: #f6faf8;
+}
+
+.phcis-table tr:last-child td {
+    border-bottom: none;
+}
+
+.confirm-card {
+    max-width: 32rem;
+}
+
+.confirm-code {
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--phcis-accent-strong);
+}
+
+.schedule-weekbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.25rem;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+.phcis-select {
+    min-width: 16rem;
+    padding: 0.45rem 0.6rem;
+    border: 1px solid var(--phcis-line);
+    border-radius: 0.4rem;
+    background: #fff;
+}
+
+.schedule-grid {
+    display: grid;
+    grid-template-columns: 4.5rem repeat(5, minmax(6.5rem, 1fr));
+    gap: 6px;
+    max-width: 56rem;
+}
+
+.schedule-corner {
+    min-height: 2rem;
+}
+
+.schedule-day,
+.schedule-time {
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.4rem;
+    text-align: center;
+}
+
+.schedule-time {
+    text-align: right;
+    color: var(--phcis-muted);
+}
+
+.slot-cell {
+    min-height: 2.55rem;
+    border: 1px solid var(--phcis-line);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.slot-cell.empty {
+    background: #f6f8f7;
+    border-style: dashed;
+}
+
+.slot-cell.booked {
+    background: #ececec;
+    color: #6b6b6b;
+    cursor: not-allowed;
+}
+
+.slot-cell.blocked {
+    background: #f3e8d8;
+    color: #6a4a12;
+}
+
+.slot-cell.diary-booked {
+    flex-direction: column;
+    gap: 2px;
+    background: #e7f6ea;
+    color: #1b5e20;
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 0.25rem;
+    cursor: default;
+}
+
+button.slot-cell.blocked {
+    cursor: pointer;
+}
+
+button.slot-cell.open {
+    background: #e7f6f3;
+    color: #115e59;
+    cursor: pointer;
+}
+
+button.slot-cell.open:hover,
+button.slot-cell.open.selected {
+    background: var(--phcis-accent);
+    color: #fff;
+    border-color: var(--phcis-accent-strong);
+}
+
+.book-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--phcis-card);
+    border: 1px solid var(--phcis-line);
+    border-radius: 0.75rem;
+}
+
+.login-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 61, 58, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+}
+
+.login-dialog {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 28rem;
+    width: 100%;
+    max-height: 90vh;
+    overflow: auto;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: #b32121;
+}
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+.blazor-error-boundary {
+    background: #b32121;
+    padding: 1rem;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred.";
+    }
+
+.loading-progress {
+    position: absolute;
+    display: block;
+    width: 8rem;
+    height: 8rem;
+    inset: 20vh 0 auto 0;
+    margin: 0 auto;
+}
+
+    .loading-progress circle {
+        fill: none;
+        stroke: #d7e3df;
+        stroke-width: 0.6rem;
+        transform-origin: 50% 50%;
+        transform: rotate(-90deg);
+    }
+
+        .loading-progress circle:last-child {
+            stroke: #0f766e;
+            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+            transition: stroke-dasharray 0.05s ease-in-out;
+        }
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-weight: bold;
+    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+    color: #115e59;
+}
+
+    .loading-progress-text:after {
+        content: var(--blazor-load-percentage-text, "Loading");
+    }
+
+code {
+    color: #0f766e;
+}

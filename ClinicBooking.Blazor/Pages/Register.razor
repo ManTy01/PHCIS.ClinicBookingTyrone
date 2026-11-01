@@ -1,0 +1,31 @@
+@page "/register"
+@* New Patient Identity user. Same resume path as login so a guest slot still books. *@
+@inject BookingResume Resume
+
+<PageTitle>Register</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">Account</span>
+    <h1>Create an account</h1>
+    <p class="page-lead">Register as a patient. If you picked a slot, we book it after this step.</p>
+</div>
+
+<RegisterForm OnAuthenticated="AfterAuthAsync" />
+
+<p class="auth-switch">
+    Already have an account?
+    <a href="@LoginHref">Sign in</a>
+</p>
+
+@code {
+    [SupplyParameterFromQuery]
+    public string? ReturnUrl { get; set; }
+
+    private string LoginHref =>
+        string.IsNullOrWhiteSpace(ReturnUrl)
+            ? "/login"
+            : "/login?returnUrl=" + Uri.EscapeDataString(ReturnUrl);
+
+    /// <summary>JWT is already in AuthSession; this posts the pending slot if there is one.</summary>
+    private Task AfterAuthAsync() => Resume.CompleteOrContinueAsync(ReturnUrl);
+}

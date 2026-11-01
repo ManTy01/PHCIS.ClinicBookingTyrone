@@ -1,0 +1,127 @@
+@page "/profile"
+@attribute [Authorize]
+@* Any JWT role. Patients edit name/phone; staff/admin only email. Save returns a fresh JWT. *@
+@inject ClinicApiClient Api
+@inject AuthSession Session
+@inject JwtAuthStateProvider Auth
+
+<PageTitle>My details</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">Account</span>
+    <h1>My details</h1>
+    <p class="page-lead">Update the contact details on your own account. Staff and admin logins keep name and phone on the patient record.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Success">@_message</FluentMessageBar>
+}
+
+@if (_loading)
+{
+    <p>Loading…</p>
+}
+else
+{
+    <FluentCard Class="auth-card">
+        <FluentStack Orientation="Orientation.Vertical" VerticalGap="12">
+            @if (_isPatient)
+            {
+                <FluentTextInput Label="First name" @bind-Value="_firstName" />
+                <FluentTextInput Label="Last name" @bind-Value="_lastName" />
+            }
+            <FluentTextInput Label="Email" TextInputType="TextInputType.Email" @bind-Value="_email" />
+            @if (_isPatient)
+            {
+                <FluentTextInput Label="Phone" @bind-Value="_phone" />
+                <label class="profile-dob">
+                    Date of birth
+                    <input type="date" class="profile-dob-input" value="@_dateOfBirth" @onchange="OnDateOfBirthChanged" />
+                </label>
+            }
+            else
+            {
+                <p class="page-lead">This login is staff or admin, so only the email can be changed here.</p>
+            }
+            <FluentButton Appearance="ButtonAppearance.Primary" Disabled="_busy" OnClick="SaveAsync">Save details</FluentButton>
+        </FluentStack>
+    </FluentCard>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _busy;
+    private bool _isPatient;
+    private string _email = string.Empty;
+    private string _firstName = string.Empty;
+    private string _lastName = string.Empty;
+    private string _phone = string.Empty;
+    private string? _dateOfBirth;
+    private string? _error;
+    private string? _message;
+
+    /// <summary>GET /api/me with the current JWT.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var profile = await Api.GetMyProfileAsync();
+            _isPatient = profile.IsPatient;
+            _email = profile.Email;
+            _firstName = profile.FirstName ?? string.Empty;
+            _lastName = profile.LastName ?? string.Empty;
+            _phone = profile.Phone ?? string.Empty;
+            _dateOfBirth = profile.DateOfBirth?.ToString("yyyy-MM-dd");
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void OnDateOfBirthChanged(ChangeEventArgs args) =>
+        _dateOfBirth = args.Value?.ToString();
+
+    /// <summary>PUT /api/me then replace localStorage JWT so the header email stays in sync.</summary>
+    private async Task SaveAsync()
+    {
+        _busy = true;
+        _error = null;
+        _message = null;
+        try
+        {
+            DateOnly? dob = null;
+            if (!string.IsNullOrWhiteSpace(_dateOfBirth) && DateOnly.TryParse(_dateOfBirth, out var parsed))
+            {
+                dob = parsed;
+            }
+
+            var result = await Api.UpdateMyProfileAsync(
+                _email,
+                _isPatient ? _firstName : null,
+                _isPatient ? _lastName : null,
+                _isPatient ? _phone : null,
+                dob);
+            await Session.SetAsync(result.Token, result.Email);
+            Auth.Notify();
+            _message = "Your details were saved.";
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+}

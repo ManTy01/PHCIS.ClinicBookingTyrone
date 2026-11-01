@@ -1,0 +1,41 @@
+@using ClinicBooking.Blazor.Auth
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthSession Session
+@inject JwtAuthStateProvider Auth
+
+@if (_ready)
+{
+    <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated == true)
+                    {
+                        <div class="page-hero">
+                            <span class="page-kicker">Access</span>
+                            <h1>Wrong role for this page</h1>
+                            <p class="page-lead">Patients use My appointments. Clinic staff use Staff diary.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <RedirectToLogin />
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+    </Router>
+}
+
+@code {
+    private bool _ready;
+
+    /// <summary>Load JWT from localStorage before routing so [Authorize] pages do not bounce to login on refresh.</summary>
+    protected override async Task OnInitializedAsync()
+    {
+        await Session.LoadAsync();
+        Auth.Notify();
+        _ready = true;
+    }
+}

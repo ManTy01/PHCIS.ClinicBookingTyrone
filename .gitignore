@@ -1,0 +1,32 @@
+## Visual Studio / .NET
+.vs/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# Build / test
+[Dd]ebug/
+[Rr]elease/
+[Tt]est[Rr]esult*/
+*.coverage
+coverage*.json
+coverage*.xml
+*.binlog
+
+# NuGet
+*.nupkg
+**/[Pp]ackages/*
+
+# SQL / local secrets
+*.mdf
+*.ldf
+appsettings.*.local.json
+secrets.json
+
+# Docker
+**/.env

@@ -1,0 +1,10 @@
+@inject NavigationManager Navigation
+
+@* Shown by AuthorizeRouteView when there is no JWT. Keeps the URL so login can send them back. *@
+@code {
+    /// <summary>Anonymous user hit an [Authorize] page.</summary>
+    protected override void OnInitialized()
+    {
+        Navigation.NavigateTo($"/login?returnUrl={Uri.EscapeDataString(Navigation.ToBaseRelativePath(Navigation.Uri))}");
+    }
+}

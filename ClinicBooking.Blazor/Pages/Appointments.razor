@@ -1,0 +1,111 @@
+@page "/appointments"
+@attribute [Authorize(Roles = "Patient")]
+@* Patient JWT required. Staff hitting this see "Wrong role" from App.razor, not this grid. *@
+@inject ClinicApiClient Api
+@inject NavigationManager Navigation
+
+<PageTitle>My appointments</PageTitle>
+
+<div class="page-hero">
+    <span class="page-kicker">Patient</span>
+    <h1>My appointments</h1>
+    <p class="page-lead">Cancel frees the hour. Reschedule keeps the old row as history and books a new one.</p>
+</div>
+
+@if (!string.IsNullOrEmpty(_error))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Error">@_error</FluentMessageBar>
+}
+@if (!string.IsNullOrEmpty(_message))
+{
+    <FluentMessageBar Intent="MessageBarIntent.Success">@_message</FluentMessageBar>
+}
+
+@if (_items is null && string.IsNullOrEmpty(_error))
+{
+    <p>Loading…</p>
+}
+else if (_items is { Count: 0 })
+{
+    <FluentCard>
+        <p>No appointments yet.</p>
+        <FluentButton Appearance="ButtonAppearance.Primary" OnClick="GoClinics">Book a clinic</FluentButton>
+    </FluentCard>
+}
+else if (_items is not null)
+{
+    <div class="phcis-table-wrap">
+        <table class="phcis-table">
+            <thead>
+                <tr>
+                    <th>When</th>
+                    <th>Clinic</th>
+                    <th>Code</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in _items)
+                {
+                    <tr>
+                        <td>@SastSchedule.Format(item.StartUtc)</td>
+                        <td>@item.ClinicName</td>
+                        <td><code>@item.ConfirmationCode</code></td>
+                        <td>@item.Status</td>
+                        <td>
+                            @if (item.Status == AppointmentStatus.Booked)
+                            {
+                                <FluentButton Appearance="ButtonAppearance.Transparent" OnClick="() => CancelAsync(item)">Cancel</FluentButton>
+                                <FluentButton Appearance="ButtonAppearance.Primary" OnClick="() => Reschedule(item)">Reschedule</FluentButton>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<AppointmentDto>? _items;
+    private string? _error;
+    private string? _message;
+
+    protected override async Task OnInitializedAsync() => await ReloadAsync();
+
+    /// <summary>GET /api/appointments — Bearer token from AuthSession.</summary>
+    private async Task ReloadAsync()
+    {
+        _error = null;
+        try
+        {
+            _items = await Api.GetMyAppointmentsAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    /// <summary>POST cancel — frees the slot for someone else.</summary>
+    private async Task CancelAsync(AppointmentDto item)
+    {
+        try
+        {
+            await Api.CancelAsync(item.Id, "Cancelled in Blazor");
+            _message = $"Cancelled {item.ConfirmationCode}. That slot is available again.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    /// <summary>Reuse the public grid with ?reschedule= so ConfirmAsync posts reschedule instead of book.</summary>
+    private void Reschedule(AppointmentDto item) =>
+        Navigation.NavigateTo($"/clinics/{item.ClinicId}/slots?reschedule={item.Id}");
+
+    private void GoClinics() => Navigation.NavigateTo("/");
+}

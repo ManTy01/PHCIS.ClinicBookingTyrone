@@ -1,0 +1,106 @@
+.phcis-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem 1rem;
+    background: linear-gradient(135deg, #0b3d3a 0%, #134e4a 58%, #0f766e 100%);
+    color: #f8fafc;
+    --colorNeutralForeground1: #f8fafc;
+    --colorNeutralForeground2: #ecfdf5;
+    --colorBrandBackground: #14b8a6;
+}
+
+.phcis-header-left,
+.phcis-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.phcis-header-right {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.phcis-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.phcis-mark {
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.55rem;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.phcis-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.phcis-kicker {
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.72;
+}
+
+.phcis-title {
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+
+.phcis-user {
+    font-size: 0.85rem;
+    opacity: 0.85;
+    max-width: 16rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(248, 250, 252, 0.35);
+}
+
+.phcis-user:hover {
+    opacity: 1;
+    border-bottom-color: #f8fafc;
+}
+
+@media (max-width: 640px) {
+    .phcis-kicker {
+        display: none;
+    }
+
+    .phcis-user {
+        max-width: 8rem;
+    }
+}
+
+.phcis-content {
+    padding: 1.25rem 1.5rem 2rem;
+    max-width: 72rem;
+}
+
+.phcis-footer {
+    padding: 0.55rem 1.25rem;
+    font-size: 0.78rem;
+    color: #64748b;
+    background: #eef4f2;
+    border-top: 1px solid #d7e3df;
+}
